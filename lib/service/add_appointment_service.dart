@@ -1,3 +1,6 @@
+
+
+//원래 실행코드(original)
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -6,7 +9,7 @@ import '../screen/config.dart';
 
 class AddAppointmentService {
   
-  Future<bool> addAppointment(String title, String date, String time, int penalty/*, String location*/) async {
+  Future<bool> addAppointment(String title, String date, String time, int penalty, double latitude, double longitude) async {
     final prefs = await SharedPreferences.getInstance();
     final String? username = prefs.getString('username');
     
@@ -26,7 +29,8 @@ class AddAppointmentService {
       'date': date,
       'time': time,
       'penalty': penalty,
-      //'location': location,
+      'latitude': latitude,
+      'longitude' : longitude,
       'creatorUsername': username, // 여기에서 username을 포함시킴
     };
     var body = json.encode(data);

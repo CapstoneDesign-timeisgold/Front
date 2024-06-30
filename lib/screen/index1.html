@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>약속장소 지정과 저장</title>
+    <style>
+        .map_wrap {width: 100%; position: relative;}
+        .modes {position: absolute; top: 10px; left: 10px; z-index: 1;}
+        .getdata {position: absolute; top: 370px; left: 10px; z-index: 1;}
+        #map {width: 100%; height: 350px; margin-top: 10px;}
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="clickLatlng"></div>
+<div id="menu_wrap" class="bg_white">
+    <div class="option">
+        <div>
+            키워드 : <input type="text" value="단국대학교" id="keyword" size="15">
+            <button onclick="searchPlaces(); return false;">검색하기</button>
+        </div>
+    </div>
+</div>
+
+<p class="getdata">
+    <button onclick="saveLocation()">약속장소 저장</button>
+</p>
+
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=6393c3462ba1dda0bc74f24086bc43a7&libraries=services,drawing"></script>
+<script>
+    var mapContainer = document.getElementById('map'),
+        mapOptions = {
+            center: new kakao.maps.LatLng(37.5665, 126.9780),
+            level: 3
+        };
+
+    var map = new kakao.maps.Map(mapContainer, mapOptions);
+
+    var lat, lng; // 전역 변수로 lat과 lng 선언
+
+    kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+        var latLng = mouseEvent.latLng;
+
+        var marker = new kakao.maps.Marker({
+            map: map,
+            position: latLng
+        });
+        marker.setMap(map);
+
+        lat = latLng.getLat();
+        lng = latLng.getLng();
+
+        var message = '클릭한 위치의 위도는 ' + lat + ' 이고, 경도는 ' + lng + ' 입니다';
+
+        var resultDiv = document.getElementById('clickLatlng');
+        resultDiv.innerHTML = message;
+
+        
+    });
+
+    function saveLocation() {
+        if (typeof lat === 'undefined' || typeof lng === 'undefined') {
+            alert('지도에서 위치를 선택해주세요.');
+            return;
+        }
+
+        window.parent.postMessage(lat + ',' + lng, '*');
+    
+
+        /*if (window.CoordinatesChannel) {
+            window.CoordinatesChannel.postMessage(lat + ',' + lng);
+        } else {
+            alert('CoordinatesChannel not found.');
+        }*/
+
+        //alert('위도: ' + lat + ', 경도: ' + lng + ' 저장되었습니다.');
+    }
+</script>
+</body>
+</html>

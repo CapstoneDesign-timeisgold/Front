@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'screen/login.dart';
 import './screen/map_screen.dart';
+import './screen/add_appointment.dart';
 
 void main() {
   if (kIsWeb) {

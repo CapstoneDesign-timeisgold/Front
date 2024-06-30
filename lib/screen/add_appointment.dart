@@ -1,4 +1,5 @@
 
+//실행할때 쓰는 코드(original)
 import 'package:flutter/material.dart';
 import './map_screen.dart'; // map_screen.dart를 임포트
 import '../service/add_appointment_service.dart';
@@ -15,7 +16,24 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
   String _date = '';
   String _time = '';
   int _penalty = 0;
-  //String _location = '';
+  double _latitude = 0;
+  double _longitude = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
+    if (arguments != null) {
+      _latitude = double.parse(arguments['latitude']);
+      _longitude = double.parse(arguments['longitude']);
+    }
+  }
+
+  /*void _onLocationSelected(int locationId) {
+    setState(() {
+      _locationId = locationId;
+    });
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -79,18 +97,9 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                     _penalty = int.parse(value!);
                   },
                 ),
-                /*TextFormField(
-                  decoration: InputDecoration(labelText: 'Location'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a location';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) {
-                    _location = value!;
-                  },
-                ),*/
+                SizedBox(height: 20),
+                Text('Latitude: $_latitude'),
+                Text('Longitude: $_longitude'),
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
@@ -99,7 +108,7 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
 
                       final addAppointmentService = AddAppointmentService();
                       bool success = await addAppointmentService.addAppointment(
-                        _title, _date, _time, _penalty/*, _location*/);
+                        _title, _date, _time, _penalty, _latitude, _longitude);
 
                       if (success) {
                         final newAppointment = Appointment(
@@ -107,13 +116,10 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                           date: _date,
                           time: _time,
                           penalty: _penalty,
-                          //location: _location,
+                          latitude: _latitude,
+                          longitude: _longitude,
                         );
                         Navigator.pop(context, newAppointment);
-                        /*Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => WebPage()), // map_screen.dart로 네비게이트
-                        );*/
                       } else {
                         showDialog(
                           context: context,
@@ -154,14 +160,16 @@ class Appointment {
   final String date;
   final String time;
   final int penalty;
-  //final String location;
+  final double latitude;
+  final double longitude;
 
   Appointment({
     required this.label,
     required this.date,
     required this.time,
     required this.penalty,
-    //required this.location,
+    required this.latitude,
+    required this.longitude,
   });
 
   Map<String, dynamic> toJson() => {
@@ -169,7 +177,8 @@ class Appointment {
         'date': date,
         'time': time,
         'penalty': penalty,
-        //'location': location,
+        'latitude': latitude,
+        'longitude': longitude,
       };
 
   factory Appointment.fromJson(Map<String, dynamic> json) {
@@ -178,9 +187,11 @@ class Appointment {
       date: json['date'],
       time: json['time'],
       penalty: json['penalty'],
-      //location: json['location'],
+      latitude: json['latitude'],
+      longitude: json['longitude'],
     );
   }
 }
+
 
 
