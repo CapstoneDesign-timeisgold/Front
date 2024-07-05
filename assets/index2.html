@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>약속 장소</title>
+    <style>
+        .map_wrap {width: 100%; position: relative;}
+        #map {width: 100%; height: 350px; margin-top: 10px;}
+    </style>
+</head>
+<body>
+<div class="map_wrap">
+    <div id="map"></div>
+</div>
+
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=6393c3462ba1dda0bc74f24086bc43a7&libraries=services,drawing"></script>
+<script>
+    console.log('HTML file loaded');
+
+    var mapContainer = document.getElementById('map'),
+        mapOptions = {
+            center: new kakao.maps.LatLng(37.5665, 126.9780),
+            level: 3
+        };
+
+    var map = new kakao.maps.Map(mapContainer, mapOptions);
+    var marker;
+
+    function setMarker(latitude, longitude) {
+        console.log('Setting marker at: ', latitude, longitude);
+        var latLng = new kakao.maps.LatLng(latitude, longitude);
+        if (marker) {
+            marker.setPosition(latLng);
+        } else {
+            marker = new kakao.maps.Marker({
+                map: map,
+                position: latLng
+            });
+            marker.setMap(map);
+        }
+        map.setCenter(latLng);
+    }
+
+    window.addEventListener('message', function(event) {
+        console.log('Received message: ', event.data);
+        var data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (e) {
+            console.log('Error parsing message data:', e);
+        }
+        if (data && data.latitude && data.longitude) {
+            var latitude = parseFloat(data.latitude);
+            var longitude = parseFloat(data.longitude);
+            console.log('Parsed coordinates: ', latitude, longitude);
+            setMarker(latitude, longitude);
+        } else {
+            console.log('Invalid message format or data type');
+        }
+    });
+
+    // 초기 데이터를 부모 창으로부터 요청합니다.
+    window.parent.postMessage({ type: 'requestCoordinates' }, '*');
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@ import './friend_list.dart';
 import './map_screen.dart';
 import './invite_appointment.dart'; // import invite_appointment.dart
 import './invite_agree.dart'; // import invite_agree.dart
+import './test.dart';
 
 class MainList extends StatefulWidget {
   @override

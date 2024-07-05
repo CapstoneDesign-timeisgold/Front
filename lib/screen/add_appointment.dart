@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import './map_screen.dart'; // map_screen.dart를 임포트
 import '../service/add_appointment_service.dart';
 import './config.dart';
+import './main_list.dart';
 
 class AddAppointmentScreen extends StatefulWidget {
   @override
@@ -119,7 +120,10 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                           latitude: _latitude,
                           longitude: _longitude,
                         );
-                        Navigator.pop(context, newAppointment);
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => MainList()),
+                        );
                       } else {
                         showDialog(
                           context: context,

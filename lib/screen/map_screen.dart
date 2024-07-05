@@ -1,4 +1,3 @@
-
 //플러터에서 실행할때 쓰는 코드(index1.html플러터로 옮긴후)-original
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -127,7 +126,7 @@ class _WebViewExampleState extends State<WebViewExample> {
   }
 
   _loadHtmlFromAssets() async {
-    String fileText = await rootBundle.loadString('lib/screen/index1.html');
+    String fileText = await rootBundle.loadString('assets/index1.html');
     _controller.loadUrl(Uri.dataFromString(fileText, mimeType: 'text/html', encoding: Encoding.getByName('utf-8')).toString());
   }
 
@@ -236,7 +235,7 @@ void registerIframeElement() {
   final iframe = html.IFrameElement()
     ..width = '100%'
     ..height = '100%'
-    ..src = 'lib/screen/index1.html'
+    ..src = 'assets/index1.html'
     ..style.border = 'none';
   
 
@@ -334,9 +333,3 @@ class _WebViewExampleState extends State<WebViewExample> {
     );
   }
 }*/
-
-
-
-
-
-

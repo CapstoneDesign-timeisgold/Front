@@ -36,12 +36,17 @@
 
     var map = new kakao.maps.Map(mapContainer, mapOptions);
 
-    var lat, lng; // 전역 변수로 lat과 lng 선언
+    var lat, lng;
+    var marker; // 전역 변수로 lat과 lng 선언
 
     kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
         var latLng = mouseEvent.latLng;
 
-        var marker = new kakao.maps.Marker({
+        if (marker) { // 기존 마커가 있으면 제거
+            marker.setMap(null);
+        }
+
+        marker = new kakao.maps.Marker({
             map: map,
             position: latLng
         });
