@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:universal_html/html.dart' as html;
 import 'dart:ui' as ui;
 import './config.dart';
+import 'recommend_place.dart';
 
 class AppointmentDetailScreen extends StatefulWidget {
   final int promiseId;
@@ -148,6 +149,15 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     }
   }
 
+  void _navigateToRecommendPlaceScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RecommendPlaceScreen(promiseId: widget.promiseId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,6 +226,30 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                               javascriptMode: JavascriptMode.unrestricted,
                             ),
                     ),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          _navigateToRecommendPlaceScreen();
+                        },
+                        child: Text('주변추천장소', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(255, 36, 115, 179),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          // 실시간위치 버튼 눌렀을 때의 동작
+                        },
+                        child: Text('실시간위치', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(255, 36, 115, 179),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

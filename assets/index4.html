@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>약속장소 주변 추천</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #map {
+            width: 100%;
+            height: calc(100% - 60px);
+        }
+        #menu_wrap {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 250px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 1;
+            font-size: 12px;
+            border-radius: 10px;
+        }
+        #placesList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: block;
+        }
+        #placesList li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        #placesList li:hover {
+            background-color: #f0f0f0;
+        }
+        #toggleButton {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        #recommendation_wrap {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 0;
+            text-align: center;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        #recommendation {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="menu_wrap">
+    <h2>500m 내 추천 장소</h2>
+    <button id="toggleButton" onclick="togglePlacesList()">접기</button>
+    <ul id="placesList"></ul>
+</div>
+<div id="recommendation_wrap">
+    <div id="recommendation"></div>
+</div>
+
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=6393c3462ba1dda0bc74f24086bc43a7&libraries=services"></script>
+<script>
+    var latitude, longitude, map, circle, fixedMarker, infoWindow;
+    var placeMarkers = [];
+    
+    var mapContainer = document.getElementById('map'),
+        mapOptions = {
+            center: new kakao.maps.LatLng(37.566535, 126.9779692), // 기본 위치 설정
+            level: 3
+        };
+
+    map = new kakao.maps.Map(mapContainer, mapOptions);
+
+    window.addEventListener('message', function(event) {
+        console.log('Received message: ', event.data);
+        var data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (e) {
+            console.log('Error parsing message data:', e);
+        }
+        if (data && data.latitude && data.longitude) {
+            latitude = parseFloat(data.latitude);
+            longitude = parseFloat(data.longitude);
+            console.log('Parsed coordinates: ', latitude, longitude);
+            setMarker(latitude, longitude);
+        } else {
+            console.log('Invalid message format or data type');
+        }
+    });
+
+    function setMarker(lat, lng) {
+        var mapCenter = new kakao.maps.LatLng(lat, lng);
+        map.setCenter(mapCenter);
+
+        if (fixedMarker) {
+            fixedMarker.setMap(null);
+        }
+
+        if (circle) {
+            circle.setMap(null);
+        }
+
+        var fixedMarkerImageSrc = 'http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png';
+        var fixedMarkerImageSize = new kakao.maps.Size(24, 35);
+        var fixedMarkerImageOption = { offset: new kakao.maps.Point(12, 35) };
+        var fixedMarkerImage = new kakao.maps.MarkerImage(fixedMarkerImageSrc, fixedMarkerImageSize, fixedMarkerImageOption);
+
+        fixedMarker = new kakao.maps.Marker({
+            map: map,
+            position: mapCenter,
+            image: fixedMarkerImage,
+            zIndex: 2
+        });
+
+        circle = new kakao.maps.Circle({
+            center: mapCenter,
+            radius: 500,
+            strokeWeight: 1,
+            strokeColor: '#00ff00',
+            strokeOpacity: 0.8,
+            strokeStyle: 'solid',
+            fillColor: '#00ff00',
+            fillOpacity: 0.2
+        });
+
+        circle.setMap(map);
+
+        searchNearby('FD6'); // 예시로 '음식점' 검색
+
+        console.log('Setting marker at: ', lat, lng);
+    }
+
+    var categoryGroups = [
+        { code: 'MT1', text: "만난김에 쇼핑! 주변 '대형마트'어떠세요?" },
+        { code: 'CS2', text: "시원한 음료수 잠깐! 주변 '편의점' 위치에요." },
+        { code: 'PK6', text: "주차할 공간이... 여기 '주차장'이에요!" },
+        { code: 'OL7', text: "주유/충전은 여기로! 주변 '주유소, 충전소'에요." },
+        { code: 'CT1', text: "문화를 같이 즐겨볼까요? 주변 '문화시설'입니다." },
+        { code: 'AT4', text: "이 주변 '관광명소'는? 숨겨진 명소가 있을까요?" },
+        { code: 'AD5', text: "늦은 시각인가요? 숙소가 필요하다면, '숙박'시설은 여기랍니다." },
+        { code: 'FD6', text: "금강산도 식후경! 주위 '음식점'은 어디가 있을까요?" },
+        { code: 'CE7', text: "커피 한 잔과 대화부터 할까요? 주변 '카페'에서요." },
+        { code: 'PM9', text: "갑자기 비상약이 필요하시다면 주변 '약국'은 여기에요." }
+    ];
+
+    var randomCategory = categoryGroups[Math.floor(Math.random() * categoryGroups.length)];
+    document.getElementById('recommendation').innerText = randomCategory.text;
+
+    function searchNearby(categoryCode) {
+        var radius = 500;
+        var placesList = document.getElementById('placesList');
+        placesList.innerHTML = '';
+
+        var ps = new kakao.maps.services.Places();
+        ps.categorySearch(categoryCode, placesSearchCB, {
+            location: new kakao.maps.LatLng(latitude, longitude),
+            radius: radius
+        });
+
+        function placesSearchCB(data, status) {
+            if (status === kakao.maps.services.Status.OK) {
+                if (data.length === 0) {
+                    var noResultEl = document.createElement('li');
+                    noResultEl.textContent = "이 주변에는 '" + randomCategory.text.split("'")[1] + "'가 없는 것 같네요.";
+                    placesList.appendChild(noResultEl);
+                } else {
+                    for (var i = 0; i < data.length; i++) {
+                        displayPlace(data[i], i + 1);
+                    }
+                }
+            } else {
+                var errorEl = document.createElement('li');
+                errorEl.textContent = "이 주변에는 없는 것 같아요...";
+                placesList.appendChild(errorEl);
+            }
+        }
+
+        function displayPlace(place, index) {
+            var el = document.createElement('li');
+            el.innerHTML = place.place_name;
+            el.onclick = function () {
+                var latLng = new kakao.maps.LatLng(place.y, place.x);
+                map.setCenter(latLng);
+                highlightPlaceMarker(latLng, place.place_name);
+            };
+            placesList.appendChild(el);
+
+            var markerImageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_number_blue.png';
+            var imageSize = new kakao.maps.Size(36, 37);
+            var imgOptions = {
+                spriteSize: new kakao.maps.Size(36, 691),
+                spriteOrigin: new kakao.maps.Point(0, (index * 46) - 37),
+                offset: new kakao.maps.Point(13, 37)
+            };
+            var markerImage = new kakao.maps.MarkerImage(markerImageSrc, imageSize, imgOptions);
+
+            var placeMarker = new kakao.maps.Marker({
+                map: map,
+                position: new kakao.maps.LatLng(place.y, place.x),
+                image: markerImage,
+                zIndex: 1
+            });
+
+            kakao.maps.event.addListener(placeMarker, 'click', function () {
+                map.setCenter(placeMarker.getPosition());
+                highlightPlaceMarker(placeMarker.getPosition(), place.place_name);
+            });
+
+            placeMarkers.push(placeMarker);
+        }
+    }
+
+    function togglePlacesList() {
+        var placesList = document.getElementById('placesList');
+        var toggleButton = document.getElementById('toggleButton');
+        if (placesList.style.display === 'none') {
+            placesList.style.display = 'block';
+            toggleButton.textContent = '접기';
+        } else {
+            placesList.style.display = 'none';
+            toggleButton.textContent = '펼치기';
+        }
+    }
+
+    function highlightPlaceMarker(latLng, placeName) {
+        if (infoWindow) {
+            infoWindow.close();
+        }
+
+        infoWindow = new kakao.maps.InfoWindow({
+            content: '<div style="padding:5px;">' + placeName + '</div>',
+            position: latLng,
+            zIndex: 1
+        });
+        infoWindow.open(map);
+    }
+
+    kakao.maps.event.addListener(map, 'click', function () {
+        if (infoWindow) {
+            infoWindow.close();
+        }
+    });
+
+    document.getElementById('recommendation').innerText = randomCategory.text;
+
+</script>
+</body>
+</html>
