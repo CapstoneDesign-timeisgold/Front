@@ -10,6 +10,7 @@ import 'package:universal_html/html.dart' as html;
 import 'dart:ui' as ui;
 import './config.dart';
 import 'recommend_place.dart';
+import 'realtime_location.dart'; // 추가된 임포트
 
 class AppointmentDetailScreen extends StatefulWidget {
   final int promiseId;
@@ -158,6 +159,15 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     );
   }
 
+  void _navigateToRealTimeLocationScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RealTimeLocationScreen(promiseId: widget.promiseId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -242,7 +252,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // 실시간위치 버튼 눌렀을 때의 동작
+                          _navigateToRealTimeLocationScreen();
                         },
                         child: Text('실시간위치', style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(

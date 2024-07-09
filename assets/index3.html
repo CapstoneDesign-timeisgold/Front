@@ -48,7 +48,7 @@
     </div>
 </div>
 
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2593cd0ae97765ce1a715a68329db9ee&libraries=drawing"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=6393c3462ba1dda0bc74f24086bc43a7&libraries=drawing"></script>
 <script>
     var mapContainer = document.getElementById('map'),
         mapOption = {
@@ -59,22 +59,8 @@
 
     var marker, infowindow;
     var watchId;
-
-    //////////////////////////////////////////////////////////////////////////////////////
-    // 약속 시간 설정 (임시 설정)
-    // 구현 필요
-    // 시간 정보는 표준시 표시 기준으로 해야함 EX)'2024-07-03T17:55:00'
-    //
-
-    var appointmentTime = new Date('2024-07-03T17:55:00'); // +9:00 = KST
-
-
-    /*
-    // 약속 장소 설정 (임시 설정)
-    var appointmentLat = 37.549280;
-    var appointmentLon = 127.019067;
-    var appointmentPosition = new kakao.maps.LatLng(appointmentLat, appointmentLon);
-    */
+    var appointmentTime;
+    var appointmentLat, appointmentLon, appointmentPosition, appointmentMarker, appointmentCircle;
 
     window.addEventListener('message', function(event) {
         console.log('Received message: ', event.data);
@@ -84,50 +70,54 @@
         } catch (e) {
             console.log('Error parsing message data:', e);
         }
-        if (data && data.latitude && data.longitude) {
-            var latitude = parseFloat(data.latitude);
-            var longitude = parseFloat(data.longitude);
-            console.log('Parsed coordinates: ', latitude, longitude);
-            setMarker(latitude, longitude);
-            // 전달된 데이터를 화면에 표시
-            document.getElementById('latitude').textContent = latitude;
-            document.getElementById('longitude').textContent = longitude;
+        if (data && data.type === 'appointment' && data.latitude && data.longitude && data.dateTime) {
+            appointmentLat = parseFloat(data.latitude);
+            appointmentLon = parseFloat(data.longitude);
+            appointmentTime = new Date(data.dateTime);
+
+            console.log('Parsed coordinates: ', appointmentLat, appointmentLon);
+            console.log('Parsed appointment time: ', appointmentTime);
+
+            setAppointmentLocation(appointmentLat, appointmentLon);
+            setAppointmentTime(appointmentTime);
         } else {
             console.log('Invalid message format or data type');
         }
     });
 
-    // 초기 데이터를 부모 창으로부터 요청합니다.
-    window.parent.postMessage({ type: 'requestCoordinates' }, '*');
+    function setAppointmentLocation(lat, lon) {
+        appointmentPosition = new kakao.maps.LatLng(lat, lon);
 
-    var appointmentPosition = new kakao.maps.LatLng(latitude, longtitude);
+        if (appointmentMarker) {
+            appointmentMarker.setMap(null);
+        }
 
+        if (appointmentCircle) {
+            appointmentCircle.setMap(null);
+        }
 
+        appointmentMarker = new kakao.maps.Marker({
+            map: map,
+            position: appointmentPosition
+        });
 
+        appointmentCircle = new kakao.maps.Circle({
+            center: appointmentPosition,
+            radius: 100,
+            strokeWeight: 5,
+            strokeColor: '#FFAE00',
+            strokeOpacity: 0.8,
+            strokeStyle: 'dashed',
+            fillColor: '#FFCF79',
+            fillOpacity: 0.7
+        });
+        appointmentCircle.setMap(map);
+    }
 
+    function setAppointmentTime(time) {
+        appointmentTime = time;
+    }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-    var appointmentMarker = new kakao.maps.Marker({
-        map: map,
-        position: appointmentPosition
-    });
-
-
-
-
-    var appointmentCircle = new kakao.maps.Circle({
-        center: appointmentPosition,
-        radius: 100,
-        strokeWeight: 5,
-        strokeColor: '#FFAE00',
-        strokeOpacity: 0.8,
-        strokeStyle: 'dashed',
-        fillColor: '#FFCF79',
-        fillOpacity: 0.7
-    });
-    appointmentCircle.setMap(map);
-
-    // 거리 계산 함수
     function isWithinDistance(lat1, lon1, lat2, lon2, distance) {
         var p = 0.017453292519943295;
         var c = Math.cos;
@@ -145,12 +135,10 @@
         maximumAge: 5000
     };
 
-    // 위치 가져오기 실패 시 실행되는 함수
     function error(err) {
         console.warn(`ERROR(${err.code}): ${err.message}`);
     }
 
-    // 마커와 인포윈도우 표시 함수
     function displayMarker(locPosition, message) {
         if (marker) {
             marker.setMap(null);
@@ -192,27 +180,30 @@
         }
     }
 
-    // 약속 장소로 이동하는 함수
     function moveToAppointment() {
-        map.setCenter(appointmentPosition);
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////////
-    //작동부
-    /////////////////////////////////////////////////////////////////////////////////////
-    var now = new Date();
-    var twelveHoursBeforeAppointment = new Date(appointmentTime.getTime() - 12 * 60 * 60 * 1000);
-
-    // 현재 위치로 이동하는 함수
-    function moveToCurrentLocation() {
-        if (now >= twelveHoursBeforeAppointment) {
-            setCenterToCurrentLocation();
+        if (appointmentPosition) {
+            map.setCenter(appointmentPosition);
         } else {
-            alert("내 위치 확인은 약속시간 12시간 전부터 약속시간 까지 가능합니다.");
+            alert("약속 장소가 설정되지 않았습니다.");
         }
     }
 
-    // 위치 추적 시작 함수
+    var now = new Date();
+    var twelveHoursBeforeAppointment;
+
+    function moveToCurrentLocation() {
+        if (appointmentTime) {
+            twelveHoursBeforeAppointment = new Date(appointmentTime.getTime() - 12 * 60 * 60 * 1000);
+            if (now >= twelveHoursBeforeAppointment) {
+                setCenterToCurrentLocation();
+            } else {
+                alert("내 위치 확인은 약속시간 12시간 전부터 약속시간 까지 가능합니다.");
+            }
+        } else {
+            alert("약속 시간이 설정되지 않았습니다.");
+        }
+    }
+
     function startTracking() {
         if (navigator.geolocation) {
             watchId = navigator.geolocation.watchPosition(checkAppointmentConditions, error, options);
@@ -221,18 +212,15 @@
         }
     }
 
-    // 위치 추적 중지 함수
     function stopTracking() {
         if (watchId) {
             navigator.geolocation.clearWatch(watchId);
         }
     }
 
-    // 약속 시간과 장소 조건 확인 함수
     function checkAppointmentConditions(position) {
         var lat = position.coords.latitude;
         var lon = position.coords.longitude;
-        //var now = new Date();
 
         var oneHourBeforeAppointment = new Date(appointmentTime.getTime() - 60 * 60 * 1000);
         var appointmentEndTime = new Date(appointmentTime.getTime());
@@ -253,10 +241,8 @@
             window.parent.postMessage('data2', '*');
             stopTracking();
         }
-        // isAtLocation이 false인 경우는 계속 추적
     }
 
-    // 페이지 로드 시 위치 추적 시작
     window.onload = function() {
         setCenterToCurrentLocation(function() {
             startTracking();

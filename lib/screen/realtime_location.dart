@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';  // foundation 임포트
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
@@ -8,21 +8,23 @@ import 'package:http/http.dart' as http;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:universal_html/html.dart' as html;
 import 'dart:ui' as ui;
-import './config.dart';  // baseUrl이 정의된 파일을 임포트
+import './config.dart';
 
-class RecommendPlaceScreen extends StatefulWidget {
+class RealTimeLocationScreen extends StatefulWidget {
   final int promiseId;
 
-  RecommendPlaceScreen({required this.promiseId});
+  RealTimeLocationScreen({required this.promiseId});
 
   @override
-  _RecommendPlaceScreenState createState() => _RecommendPlaceScreenState();
+  _RealTimeLocationScreenState createState() => _RealTimeLocationScreenState();
 }
 
-class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
+class _RealTimeLocationScreenState extends State<RealTimeLocationScreen> {
   late Completer<WebViewController> _controllerCompleter;
   String? message;
   bool iframeLoaded = false;
+  int? promiseId;
+  String? username; // username 추가
 
   @override
   void initState() {
@@ -34,10 +36,19 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
     if (kIsWeb) {
       _registerIframeElement(widget.promiseId);
     }
+
+    // 메시지 리스너 등록
+    html.window.onMessage.listen((event) {
+      if (event.data == 'data1') {
+        _updateLateStatus(true);
+      } else if (event.data == 'data2') {
+        _updateLateStatus(false);
+      }
+    });
   }
 
   @override
-  void didUpdateWidget(RecommendPlaceScreen oldWidget) {
+  void didUpdateWidget(RealTimeLocationScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.promiseId != oldWidget.promiseId) {
       iframeLoaded = false;
@@ -53,7 +64,17 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
       final appointment = await _fetchAppointmentDetail();
       final latitude = double.parse(appointment['latitude'].toString());
       final longitude = double.parse(appointment['longitude'].toString());
-      message = jsonEncode({'latitude': latitude, 'longitude': longitude});
+      final date = appointment['date'];
+      final time = appointment['time'];
+      final dateTime = '${date}T${time}:00';  // 약속 시간을 'YYYY-MM-DDTHH:MM:SS' 형식으로 변환
+      promiseId = appointment['promiseId'];
+
+      message = jsonEncode({
+        'type': 'appointment',
+        'latitude': latitude,
+        'longitude': longitude,
+        'dateTime': dateTime,
+      });
 
       if (iframeLoaded) {
         _sendMessageToIframe();
@@ -65,7 +86,7 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
 
   Future<Map<String, dynamic>> _fetchAppointmentDetail() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? username = prefs.getString('username');
+    username = prefs.getString('username'); // username 가져오기
 
     if (username == null) {
       print('Username not found in SharedPreferences');
@@ -74,7 +95,7 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
 
     final response = await http.get(
       Uri.parse('$baseUrl/promise/${widget.promiseId}'),
-      headers: {'username': username},
+      headers: {'username': username!},
     );
 
     if (response.statusCode == 200) {
@@ -85,20 +106,12 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
     }
   }
 
-  Future<void> _loadHtmlFromAssets(double latitude, double longitude) async {
-    String fileText = await rootBundle.loadString('assets/index4.html');
-    fileText = fileText.replaceAll('{LATITUDE}', latitude.toString());
-    fileText = fileText.replaceAll('{LONGITUDE}', longitude.toString());
-    final controller = await _controllerCompleter.future;
-    controller.loadUrl(Uri.dataFromString(fileText, mimeType: 'text/html', encoding: Encoding.getByName('utf-8')).toString());
-  }
-
   void _registerIframeElement(int promiseId) {
     final iframe = html.IFrameElement()
       ..width = '100%'
       ..height = '100%'
       ..style.border = 'none'
-      ..src = 'assets/index4.html';
+      ..src = 'assets/index3.html';
 
     iframe.onLoad.listen((event) {
       print("Iframe loaded");
@@ -109,7 +122,7 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
     });
 
     // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory('iframeElement20${promiseId}', (int viewId) => iframe);
+    ui.platformViewRegistry.registerViewFactory('iframeElement25', (int viewId) => iframe);
   }
 
   void _sendMessageToIframe() {
@@ -118,7 +131,7 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
       return;
     }
     print("Sending message to iframe: $message");
-    final iframe = html.document.querySelector('iframe[src="assets/index4.html"]') as html.IFrameElement?;
+    final iframe = html.document.querySelector('iframe[src="assets/index3.html"]') as html.IFrameElement?;
     if (iframe != null) {
       print("Iframe found: true");
       iframe.contentWindow?.postMessage(message, '*');
@@ -128,21 +141,39 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
   }
 
   void _sendMessageToWebView() {
-    if (!kIsWeb) {
-      _controllerCompleter.future.then((controller) {
-        if (message != null) {
-          controller.runJavascript("receiveMessage('$message')");
-        }
-      });
-    } else {
-      print("Sending message to iframe: $message");
-      final iframe = html.document.querySelector('iframe[src="assets/index4.html"]') as html.IFrameElement?;
-      if (iframe != null) {
-        print("Iframe found: true");
-        iframe.contentWindow?.postMessage(message, '*');
-      } else {
-        print("Iframe found: false");
+    _controllerCompleter.future.then((controller) {
+      if (message != null) {
+        controller.runJavascript("receiveMessage('$message')");
       }
+    });
+  }
+
+  Future<void> _updateLateStatus(bool late) async {
+    if (promiseId == null) {
+      print('Promise ID is null');
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/promise/update-late-status'),
+        headers: {
+          'Content-Type': 'application/json',
+          'username': username!, // username 헤더 추가
+        },
+        body: jsonEncode({
+          'promiseId': promiseId,
+          'late': late,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Late status updated successfully');
+      } else {
+        print('Failed to update late status');
+      }
+    } catch (e) {
+      print('Error updating late status: $e');
     }
   }
 
@@ -150,7 +181,7 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('주변 장소 추천', style: TextStyle(color: Colors.white)),
+        title: Text('실시간 위치', style: TextStyle(color: Colors.white)),
         backgroundColor: Color.fromARGB(255, 36, 115, 179),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -164,7 +195,17 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
             final appointment = snapshot.data!;
             final latitude = double.parse(appointment['latitude'].toString());
             final longitude = double.parse(appointment['longitude'].toString());
-            message = jsonEncode({'latitude': latitude, 'longitude': longitude});
+            final date = appointment['date'];
+            final time = appointment['time'];
+            final dateTime = '${date}T${time}:00';  // 약속 시간을 'YYYY-MM-DDTHH:MM:SS' 형식으로 변환
+
+            message = jsonEncode({
+              'type': 'appointment',
+              'latitude': latitude,
+              'longitude': longitude,
+              'dateTime': dateTime,
+            });
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (kIsWeb) {
                 _sendMessageToIframe();
@@ -172,13 +213,14 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
                 _sendMessageToWebView();
               }
             });
+
             return kIsWeb
-                ? HtmlElementView(viewType: 'iframeElement20${widget.promiseId}')
+                ? HtmlElementView(viewType: 'iframeElement25')
                 : WebView(
                     initialUrl: '',
                     onWebViewCreated: (WebViewController webViewController) {
                       _controllerCompleter.complete(webViewController);
-                      _loadHtmlFromAssets(latitude, longitude);
+                      _loadHtmlFromAssets(latitude, longitude, dateTime);
                     },
                     javascriptMode: JavascriptMode.unrestricted,
                   );
@@ -186,5 +228,14 @@ class _RecommendPlaceScreenState extends State<RecommendPlaceScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _loadHtmlFromAssets(double latitude, double longitude, String dateTime) async {
+    String fileText = await rootBundle.loadString('assets/index3.html');
+    fileText = fileText.replaceAll('{LATITUDE}', latitude.toString());
+    fileText = fileText.replaceAll('{LONGITUDE}', longitude.toString());
+    fileText = fileText.replaceAll('{DATETIME}', dateTime);
+    final controller = await _controllerCompleter.future;
+    controller.loadUrl(Uri.dataFromString(fileText, mimeType: 'text/html', encoding: Encoding.getByName('utf-8')).toString());
   }
 }

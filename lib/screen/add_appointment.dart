@@ -63,7 +63,7 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
                   },
                 ),
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Date (YYYY/MM/DD)'),
+                  decoration: InputDecoration(labelText: 'Date (YYYY-MM-DD)'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a date';
