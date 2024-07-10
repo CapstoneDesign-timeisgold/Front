@@ -146,7 +146,9 @@
 
         circle.setMap(map);
 
-        searchNearby('FD6'); // 예시로 '음식점' 검색
+        //searchNearby('FD6'); // 예시로 '음식점' 검색
+        searchNearby(randomCategory.code); // 예시로 '음식점' 검색
+
 
         console.log('Setting marker at: ', lat, lng);
     }
@@ -198,7 +200,7 @@
 
         function displayPlace(place, index) {
             var el = document.createElement('li');
-            el.innerHTML = place.place_name;
+            el.innerHTML = index +'. ' + place.place_name;
             el.onclick = function () {
                 var latLng = new kakao.maps.LatLng(place.y, place.x);
                 map.setCenter(latLng);

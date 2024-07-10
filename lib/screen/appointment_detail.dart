@@ -10,7 +10,8 @@ import 'package:universal_html/html.dart' as html;
 import 'dart:ui' as ui;
 import './config.dart';
 import 'recommend_place.dart';
-import 'realtime_location.dart'; // 추가된 임포트
+import 'realtime_location.dart';
+import 'main_list.dart'; // 추가된 임포트
 
 class AppointmentDetailScreen extends StatefulWidget {
   final int promiseId;
@@ -18,13 +19,14 @@ class AppointmentDetailScreen extends StatefulWidget {
   AppointmentDetailScreen({required this.promiseId});
 
   @override
-  _AppointmentDetailScreenState createState() => _AppointmentDetailScreenState();
+  _AppointmentDetailScreenState createState() =>
+      _AppointmentDetailScreenState();
 }
 
 class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   late Future<Map<String, dynamic>> _futureAppointment;
   late Completer<WebViewController> _controllerCompleter;
-  String? message;  // message 변수를 nullable로 정의
+  String? message; // message 변수를 nullable로 정의
   bool iframeLoaded = false; // iframe 로드 상태를 추적하는 변수 추가
 
   @override
@@ -32,7 +34,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     super.initState();
     _controllerCompleter = Completer<WebViewController>();
 
-    _fetchAndSendAppointmentDetail();  // 초기 데이터 로드 및 전송
+    _fetchAndSendAppointmentDetail(); // 초기 데이터 로드 및 전송
 
     if (kIsWeb) {
       _registerIframeElement(widget.promiseId);
@@ -43,7 +45,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   void didUpdateWidget(AppointmentDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.promiseId != oldWidget.promiseId) {
-      iframeLoaded = false;  // iframe 로드 상태 초기화
+      iframeLoaded = false; // iframe 로드 상태 초기화
       _fetchAndSendAppointmentDetail();
       if (kIsWeb) {
         _registerIframeElement(widget.promiseId);
@@ -93,7 +95,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     fileText = fileText.replaceAll('{LATITUDE}', latitude.toString());
     fileText = fileText.replaceAll('{LONGITUDE}', longitude.toString());
     final controller = await _controllerCompleter.future;
-    controller.loadUrl(Uri.dataFromString(fileText, mimeType: 'text/html', encoding: Encoding.getByName('utf-8')).toString());
+    controller.loadUrl(
+        Uri.dataFromString(fileText, mimeType: 'text/html', encoding: Encoding.getByName('utf-8')).toString());
   }
 
   void _registerIframeElement(int promiseId) {
@@ -105,7 +108,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
 
     iframe.onLoad.listen((event) {
       print("Iframe loaded");
-      iframeLoaded = true;  // iframe 로드 상태 업데이트
+      iframeLoaded = true; // iframe 로드 상태 업데이트
       if (message != null) {
         _sendMessageToIframe();
       }
@@ -168,6 +171,78 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     );
   }
 
+  bool _isPenaltyButtonEnabled(DateTime appointmentDateTime) {
+    DateTime now = DateTime.now();
+    return now.isAfter(appointmentDateTime);
+  }
+
+  Future<void> _handlePenaltySettlement() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? username = prefs.getString('username');
+
+    if (username == null) {
+      print('Username not found in SharedPreferences');
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/payment/reward'),
+        headers: {'Content-Type': 'application/json', 'username': username},
+        body: jsonEncode({'promiseId': widget.promiseId}),
+      );
+
+      if (response.statusCode == 200) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('성공'),
+              content: Text('벌금정산이 완료되었습니다'),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('확인'),
+                  onPressed: () {
+                    Navigator.pop(context);  // AlertDialog 닫기
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => MainList()),
+                      (Route<dynamic> route) => false,
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        print('Failed to settle penalty');
+      }
+    } catch (e) {
+      print('Error settling penalty: $e');
+    }
+  }
+
+  void _showPenaltyWarning() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('알림'),
+          content: Text('약속시간이 지난 후 정산이 가능합니다'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('확인'),
+              onPressed: () {
+                Navigator.pop(context);  // AlertDialog 닫기
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,7 +261,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             final appointment = snapshot.data!;
             final latitude = double.parse(appointment['latitude'].toString());
             final longitude = double.parse(appointment['longitude'].toString());
-            message = jsonEncode({'latitude': latitude, 'longitude': longitude});  // 메시지 초기화
+            final date = appointment['date'];
+            final time = appointment['time'];
+            final dateTimeString = '$date $time';
+            final appointmentDateTime = DateTime.parse(dateTimeString);
+            message = jsonEncode({'latitude': latitude, 'longitude': longitude}); // 메시지 초기화
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _sendMessageToIframe();
             });
@@ -200,8 +279,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10),
-                  Text('Date: ${appointment['date']}'),
-                  Text('Time: ${appointment['time']}'),
+                  Text('Date: $date'),
+                  Text('Time: $time'),
                   Text('Penalty: ${appointment['penalty']}'),
                   SizedBox(height: 20),
                   Text(
@@ -242,21 +321,26 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton(
-                        onPressed: () {
-                          _navigateToRecommendPlaceScreen();
-                        },
+                        onPressed: _navigateToRecommendPlaceScreen,
                         child: Text('주변추천장소', style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color.fromARGB(255, 36, 115, 179),
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () {
-                          _navigateToRealTimeLocationScreen();
-                        },
+                        onPressed: _navigateToRealTimeLocationScreen,
                         child: Text('실시간위치', style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color.fromARGB(255, 36, 115, 179),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _isPenaltyButtonEnabled(appointmentDateTime)
+                            ? _handlePenaltySettlement
+                            : _showPenaltyWarning,
+                        child: Text('벌금정산', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
                         ),
                       ),
                     ],

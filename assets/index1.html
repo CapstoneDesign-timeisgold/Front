@@ -4,82 +4,291 @@
     <meta charset="utf-8">
     <title>약속장소 지정과 저장</title>
     <style>
-        .map_wrap {width: 100%; position: relative;}
-        .modes {position: absolute; top: 10px; left: 10px; z-index: 1;}
-        .getdata {position: absolute; top: 370px; left: 10px; z-index: 1;}
-        #map {width: 100%; height: 350px; margin-top: 10px;}
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .map_wrap {
+            position: relative;
+            height: 100%;
+            width: 100%;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        #menu_wrap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: 1;
+            font-size: 12px;
+        }
+        .option {
+            text-align: center;
+            padding: 10px;
+        }
+        .option form {
+            display: inline-block;
+        }
+        #placesList {
+            display: none;
+            background: white;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            position: relative;
+        }
+        #placesList li {
+            list-style: none;
+        }
+        #placesList .item {
+            position: relative;
+            border-bottom: 1px solid #888;
+            overflow: hidden;
+            cursor: pointer;
+            min-height: 65px;
+        }
+        #placesList .item span {
+            display: block;
+            margin-top: 4px;
+        }
+        #placesList .item h5,
+        #placesList .item .info {
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #placesList .item .info {
+            padding: 10px 0 10px 55px;
+        }
+        .save-button-container {
+            position: absolute;
+            bottom: 20px;  /* 하단에서 20px 위에 위치 */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        .save-button {
+            font-size: 24px;
+            padding: 15px 30px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .save-button:hover {
+            background-color: #0056b3;
+        }
+        .close-button {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 2;
+            background: #f66;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-<div id="map"></div>
-<div id="clickLatlng"></div>
-<div id="menu_wrap" class="bg_white">
-    <div class="option">
-        <div>
-            키워드 : <input type="text" value="단국대학교" id="keyword" size="15">
-            <button onclick="searchPlaces(); return false;">검색하기</button>
+<div class="map_wrap">
+    <div id="map"></div>
+    <div id="menu_wrap" class="bg_white">
+        <div class="option">
+            <form onsubmit="searchPlaces(); return false;">
+                키워드 : <input type="text" value=" " id="keyword" size="15">
+                <button type="submit">검색하기</button>
+            </form>
         </div>
+        <ul id="placesList"></ul>
+        <button class="close-button" onclick="closePlacesList()">상세정보 닫기</button>
+        <div id="pagination"></div>
+    </div>
+    <div class="save-button-container">
+        <button onclick="saveLocation()" class="save-button">약속장소 저장</button>
     </div>
 </div>
 
-<p class="getdata">
-    <button onclick="saveLocation()">약속장소 저장</button>
-</p>
-
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=6393c3462ba1dda0bc74f24086bc43a7&libraries=services,drawing"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=6393c3462ba1dda0bc74f24086bc43a7&libraries=services"></script>
 <script>
-    var mapContainer = document.getElementById('map'),
-        mapOptions = {
+    var map, marker, infowindow;
+
+    function initMap() {
+        var container = document.getElementById('map');
+        var options = {
             center: new kakao.maps.LatLng(37.5665, 126.9780),
             level: 3
         };
 
-    var map = new kakao.maps.Map(mapContainer, mapOptions);
+        map = new kakao.maps.Map(container, options);
+        infowindow = new kakao.maps.InfoWindow({zIndex:1});
 
-    var lat, lng;
-    var marker; // 전역 변수로 lat과 lng 선언
+        kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+            document.getElementById('placesList').style.display = 'none';
+            var latlng = mouseEvent.latLng;
+            displaySingleMarker({
+                y: latlng.getLat(),
+                x: latlng.getLng(),
+                //place_name: '선택한 위치'
+            });
+        });
+    }
 
-    kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
-        var latLng = mouseEvent.latLng;
+    function searchPlaces() {
+        var keyword = document.getElementById('keyword').value;
+        if (!keyword.replace(/^\s+|\s+$/g, '')) {
+            alert('키워드를 입력해주세요!');
+            return false;
+        }
+        var ps = new kakao.maps.services.Places();
+        ps.keywordSearch(keyword, placesSearchCB);
+    }
 
-        if (marker) { // 기존 마커가 있으면 제거
+    function placesSearchCB(data, status, pagination) {
+        if (status === kakao.maps.services.Status.OK) {
+            displayPlaces(data);
+            displayPagination(pagination);
+            document.getElementById('placesList').style.display = 'block';
+        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+            alert('검색 결과가 존재하지 않습니다.');
+            return;
+        } else if (status === kakao.maps.services.Status.ERROR) {
+            alert('검색 결과 중 오류가 발생했습니다.');
+            return;
+        }
+    }
+
+    function displayPlaces(places) {
+        var listEl = document.getElementById('placesList');
+        var fragment = document.createDocumentFragment();
+        removeAllChildNods(listEl);
+
+        for (var i = 0; i < places.length; i++) {
+            var itemEl = getListItem(i, places[i]);
+            (function(place) {
+                itemEl.onclick = function() {
+                    displaySingleMarker(place);
+                };
+            })(places[i]);
+            fragment.appendChild(itemEl);
+        }
+
+        listEl.appendChild(fragment);
+    }
+
+    function displaySingleMarker(place) {
+        if (marker) {
             marker.setMap(null);
         }
 
+        var position = new kakao.maps.LatLng(place.y, place.x);
         marker = new kakao.maps.Marker({
             map: map,
-            position: latLng
+            position: position
         });
-        marker.setMap(map);
 
-        lat = latLng.getLat();
-        lng = latLng.getLng();
+        var content = '<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>';
+        //infowindow.setContent(content);
+        //infowindow.open(map, marker);
 
-        var message = '클릭한 위치의 위도는 ' + lat + ' 이고, 경도는 ' + lng + ' 입니다';
+        map.setCenter(position);
+    }
 
-        var resultDiv = document.getElementById('clickLatlng');
-        resultDiv.innerHTML = message;
+    function displayPagination(pagination) {
+        var paginationEl = document.getElementById('pagination'),
+            fragment = document.createDocumentFragment(),
+            i;
 
-        
-    });
+        while (paginationEl.hasChildNodes()) {
+            paginationEl.removeChild(paginationEl.lastChild);
+        }
+
+        for (i = 1; i <= pagination.last; i++) {
+            var el = document.createElement('a');
+            el.href = "#";
+            el.innerHTML = i;
+
+            if (i === pagination.current) {
+                el.className = 'on';
+            } else {
+                el.onclick = (function(i) {
+                    return function() {
+                        pagination.gotoPage(i);
+                    }
+                })(i);
+            }
+
+            fragment.appendChild(el);
+        }
+        paginationEl.appendChild(fragment);
+    }
+
+    function getListItem(index, places) {
+        var el = document.createElement('li'),
+            itemStr = '<span class="markerbg marker_' + (index+1) + '"></span>' +
+                '<div class="info">' +
+                '   <h5>' + places.place_name + '</h5>';
+
+        if (places.road_address_name) {
+            itemStr += '    <span>' + places.road_address_name + '</span>' +
+                '   <span class="jibun gray">' +  places.address_name  + '</span>';
+        } else {
+            itemStr += '    <span>' +  places.address_name  + '</span>';
+        }
+
+        itemStr += '  <span class="tel">' + places.phone  + '</span>' +
+            '</div>';
+
+        el.innerHTML = itemStr;
+        el.className = 'item';
+
+        return el;
+    }
+
+    function removeAllChildNods(el) {
+        while (el.hasChildNodes()) {
+            el.removeChild(el.lastChild);
+        }
+    }
 
     function saveLocation() {
-        if (typeof lat === 'undefined' || typeof lng === 'undefined') {
+        if (!marker) {
             alert('지도에서 위치를 선택해주세요.');
             return;
         }
-
+        var position = marker.getPosition();
+        var lat = position.getLat();
+        var lng = position.getLng();
         window.parent.postMessage(lat + ',' + lng, '*');
-    
-
-        /*if (window.CoordinatesChannel) {
-            window.CoordinatesChannel.postMessage(lat + ',' + lng);
-        } else {
-            alert('CoordinatesChannel not found.');
-        }*/
-
-        //alert('위도: ' + lat + ', 경도: ' + lng + ' 저장되었습니다.');
+        //alert('위도: ' + lat + ', 경도: ' + lng + ' 저장되었습니다.'); //테스트용 1
+        alert('약속 장소가 저장되었습니다.'); //실제출력용 1
     }
+
+    function closePlacesList() {
+        document.getElementById('placesList').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+
+        var keywordInput = document.getElementById('keyword');
+        keywordInput.addEventListener('focus', function() {
+            document.getElementById('placesList').style.display = 'block';
+        });
+
+    });
 </script>
 </body>
 </html>

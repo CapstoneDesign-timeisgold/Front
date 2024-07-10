@@ -233,7 +233,7 @@
             window.parent.postMessage('data1', '*');
             stopTracking();
         } else if (!isOnTime && !isAtLocation) {
-            alert("약속시간 내 약속장소에 도착하지 못했습니다.");
+            alert("약속시간 내 약속장소에 도착하지 못했습니다. 혹은 약속시간이 지났습니다.");
             window.parent.postMessage('data2', '*');
             stopTracking();
         } else if (!isOnTime) {

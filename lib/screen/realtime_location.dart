@@ -148,7 +148,7 @@ class _RealTimeLocationScreenState extends State<RealTimeLocationScreen> {
     });
   }
 
-  Future<void> _updateLateStatus(bool late) async {
+  Future<void> _updateLateStatus(bool arrival) async {
     if (promiseId == null) {
       print('Promise ID is null');
       return;
@@ -163,7 +163,7 @@ class _RealTimeLocationScreenState extends State<RealTimeLocationScreen> {
         },
         body: jsonEncode({
           'promiseId': promiseId,
-          'late': late,
+          'arrival': arrival,
         }),
       );
 

@@ -13,6 +13,7 @@ import './invite_appointment.dart'; // import invite_appointment.dart
 import './invite_agree.dart'; // import invite_agree.dart
 import './test.dart';
 
+
 class MainList extends StatefulWidget {
   @override
   _MainListState createState() => _MainListState();
@@ -21,6 +22,7 @@ class MainList extends StatefulWidget {
 class _MainListState extends State<MainList> {
   final List<Appointment> appointments = [];
   String? username;
+  int? userPoints;
 
   @override
   void initState() {
@@ -28,6 +30,7 @@ class _MainListState extends State<MainList> {
     _loadUsername();
     _loadAppointments();
     _fetchAppointmentsFromServer();
+    _fetchUserPoints();
   }
 
   @override
@@ -90,8 +93,39 @@ class _MainListState extends State<MainList> {
       });
       _saveAppointments();
     } else {
-      // Handle the error
       print('Failed to load appointments from server');
+    }
+  }
+
+  Future<void> _fetchUserPoints() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? username = prefs.getString('username');
+
+    if (username == null) {
+      print('Username not found in SharedPreferences');
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/user/money'),
+        headers: {'username': username},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['money'] != null && data['money'] is int) {
+          setState(() {
+            userPoints = data['money'];
+          });
+        } else {
+          print('Error: money value is null or not an integer');
+        }
+      } else {
+        print('Failed to load user points from server');
+      }
+    } catch (e) {
+      print('Error fetching user points: $e');
     }
   }
 
@@ -115,7 +149,6 @@ class _MainListState extends State<MainList> {
       });
       _saveAppointments();
     } else {
-      // Handle the error
       print('Failed to delete appointment from server');
     }
   }
@@ -143,15 +176,29 @@ class _MainListState extends State<MainList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Appointments', style: TextStyle(color: Colors.white)),
+        title: Row(
+          children: [
+            Text('Appointments', style: TextStyle(color: Colors.white)),
+            Spacer(),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${userPoints ?? 0} p',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.logout),
+              onPressed: _logout,
+              tooltip: 'Logout',
+            ),
+          ],
+        ),
         backgroundColor: Color.fromARGB(255, 36, 115, 179),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: _logout,
-            tooltip: 'Logout',
-          ),
-        ],
       ),
       body: ListView.builder(
         itemCount: appointments.length,
@@ -260,7 +307,7 @@ class Appointment {
   final String date;
   final String time;
   final int promiseId;
-  final String creatorUsername; // Change creator to creatorUsername
+  final String creatorUsername;
 
   Appointment({required this.title, required this.date, required this.time, required this.promiseId, required this.creatorUsername});
 
@@ -269,7 +316,7 @@ class Appointment {
         'date': date,
         'time': time,
         'promiseId': promiseId,
-        'creatorUsername': creatorUsername, // Change creator to creatorUsername
+        'creatorUsername': creatorUsername,
       };
 
   factory Appointment.fromJson(Map<String, dynamic> json) {
@@ -278,10 +325,14 @@ class Appointment {
       date: json['date'],
       time: json['time'],
       promiseId: json['promiseId'],
-      creatorUsername: json['creatorUsername'], // Change creator to creatorUsername
+      creatorUsername: json['creatorUsername'],
     );
   }
 }
+
+
+
+
 
 
 
