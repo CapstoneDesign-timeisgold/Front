@@ -56,7 +56,7 @@ class _WebPageState extends State<WebPage> {
       // 웹 환경
       return Scaffold(
         appBar: AppBar(
-          title: Text('Google WebView Example'),
+          title: Text('약속 장소 설정'),
           actions: [
             IconButton(
               icon: Icon(Icons.arrow_forward),
@@ -85,8 +85,8 @@ class _WebPageState extends State<WebPage> {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  Text('Latitude: $latitude'),
-                  Text('Longitude: $longitude'),
+                  //Text('Latitude: $latitude'),
+                  //Text('Longitude: $longitude'),
                 ],
               ),
             ),
@@ -177,7 +177,7 @@ class _WebViewExampleState extends State<WebViewExample> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Google WebView Example'),
+        title: Text('약속 장소 설정'),
         actions: [
           IconButton(
             icon: Icon(Icons.arrow_forward),
@@ -220,8 +220,8 @@ class _WebViewExampleState extends State<WebViewExample> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                Text('Latitude: $latitude'),
-                Text('Longitude: $longitude'),
+                //Text('Latitude: $latitude'),
+                //Text('Longitude: $longitude'),
               ],
             ),
           ),

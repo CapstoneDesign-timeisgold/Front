@@ -24,7 +24,7 @@ class _SignUpState extends State<SignUp> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Sign Up', style: TextStyle(color: Colors.white,),),
+        title: Text('회원가입', style: TextStyle(color: Colors.white,),),
         elevation: 0.0,
         backgroundColor: Color.fromARGB(255, 36, 115, 179),
       ),
@@ -51,26 +51,26 @@ class _SignUpState extends State<SignUp> {
                           TextField(
                             controller: controller4,
                             autofocus: true,
-                            decoration: InputDecoration(labelText: 'Enter ID'),
+                            decoration: InputDecoration(labelText: 'ID를 입력하세요'),
                             keyboardType: TextInputType.text,
                           ),
                           TextField(
                             controller: controller5,
                             decoration:
-                                InputDecoration(labelText: 'Enter password'),
+                                InputDecoration(labelText: 'Password를 입력하세요'),
                             keyboardType: TextInputType.text,
                             obscureText: true, // 비밀번호 안보이도록 하는 것
                           ),
                           TextField(
                             controller: controller6,
                             autofocus: true,
-                            decoration: InputDecoration(labelText: 'Enter email address'),
+                            decoration: InputDecoration(labelText: 'email 주소를 입력하세요'),
                             keyboardType: TextInputType.text,
                           ),
                           TextField(
                             controller: controller7,
                             autofocus: true,
-                            decoration: InputDecoration(labelText: 'Enter nickname'),
+                            decoration: InputDecoration(labelText: 'Nickname을 입력하세요'),
                             keyboardType: TextInputType.text,
                           ),
                           SizedBox(

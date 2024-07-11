@@ -45,77 +45,41 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add Friend', style: TextStyle(color: Colors.white)),
+        title: Text('친구 추가', style: TextStyle(color: Colors.white)),
         backgroundColor: Color.fromARGB(255, 36, 115, 179),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Enter friend\'s username'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                _sendFriendRequest(_usernameController.text);
-              },
-              child: Text('Send Friend Request'),
-            ),
-            SizedBox(height: 20),
-            Text(_statusMessage),
-          ],
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '상대방의 ID를 입력하세요',
+                    style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),  // 라벨과 입력 필드 사이의 간격을 추가했습니다
+                  TextField(
+                    controller: _usernameController,
+                  ),
+                ],
+              ),
+              SizedBox(height: 30),  // 두 요소 사이의 간격을 넓혔습니다
+              ElevatedButton(
+                onPressed: () {
+                  _sendFriendRequest(_usernameController.text);
+                },
+                child: Text('친구 추가'),
+              ),
+              SizedBox(height: 20),
+              Text(_statusMessage),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
-
-/*class AddFriendScreen extends StatefulWidget {
-  @override
-  _AddFriendScreenState createState() => _AddFriendScreenState();
-}
-
-class _AddFriendScreenState extends State<AddFriendScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  String _statusMessage = '';
-
-  void _sendFriendRequest(String receiverUsername) {
-    // 서버 요청 부분을 주석 처리하고 대신 하드코딩된 데이터로 상태 메시지 설정
-    setState(() {
-      _statusMessage = 'Friend request sent successfully to $receiverUsername';
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Friend', style: TextStyle(color: Colors.white)),
-        backgroundColor: Color.fromARGB(255, 36, 115, 179),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Enter friend\'s username'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                _sendFriendRequest(_usernameController.text);
-              },
-              child: Text('Send Friend Request'),
-            ),
-            SizedBox(height: 20),
-            Text(_statusMessage),
-          ],
-        ),
-      ),
-    );
-  }
-}*/

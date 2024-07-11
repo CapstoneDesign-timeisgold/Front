@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';  // foundation 임포트
+import 'package:flutter/foundation.dart'; // foundation 임포트
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -203,7 +203,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 TextButton(
                   child: Text('확인'),
                   onPressed: () {
-                    Navigator.pop(context);  // AlertDialog 닫기
+                    Navigator.pop(context); // AlertDialog 닫기
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (context) => MainList()),
@@ -234,7 +234,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             TextButton(
               child: Text('확인'),
               onPressed: () {
-                Navigator.pop(context);  // AlertDialog 닫기
+                Navigator.pop(context); // AlertDialog 닫기
               },
             ),
           ],
@@ -247,7 +247,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Appointment Detail', style: TextStyle(color: Colors.white)),
+        title: Text('약속 상세정보', style: TextStyle(color: Colors.white)),
         backgroundColor: Color.fromARGB(255, 36, 115, 179),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -269,39 +269,69 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _sendMessageToIframe();
             });
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Title: ${appointment['title']}',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  Text('Date: $date'),
-                  Text('Time: $time'),
-                  Text('Penalty: ${appointment['penalty']}'),
-                  SizedBox(height: 20),
-                  Text(
-                    'Participants:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 5),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: (appointment['participantUsernames'] as List<dynamic>)
-                        .map((username) => Text('Username: $username'))
-                        .toList(),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Location:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 5),
-                  Expanded(
-                    child: Container(
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Card(
+                      color: Colors.white,
+                      child: ListTile(
+                        title: Text('약속 이름', style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(appointment['title']),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Card(
+                      color: Colors.white,
+                      child: ListTile(
+                        title: Text('날짜', style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(date),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Card(
+                      color: Colors.white,
+                      child: ListTile(
+                        title: Text('시간', style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(time),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Card(
+                      color: Colors.white,
+                      child: ListTile(
+                        title: Text('벌금', style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(appointment['penalty'].toString()),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      '약속 참가자:',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 5),
+                    Card(
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Wrap(
+                          spacing: 8.0,
+                          runSpacing: 4.0,
+                          children: (appointment['participantUsernames'] as List<dynamic>)
+                              .map((username) => Chip(label: Text(username)))
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      '약속장소:',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 5),
+                    Container(
                       width: double.infinity,
                       height: 300,
                       child: kIsWeb
@@ -315,37 +345,37 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                               javascriptMode: JavascriptMode.unrestricted,
                             ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _navigateToRecommendPlaceScreen,
-                        child: Text('주변추천장소', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color.fromARGB(255, 36, 115, 179),
+                    SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _navigateToRecommendPlaceScreen,
+                          child: Text('주변추천장소', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromARGB(255, 36, 115, 179),
+                          ),
                         ),
-                      ),
-                      ElevatedButton(
-                        onPressed: _navigateToRealTimeLocationScreen,
-                        child: Text('실시간위치', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color.fromARGB(255, 36, 115, 179),
+                        ElevatedButton(
+                          onPressed: _navigateToRealTimeLocationScreen,
+                          child: Text('실시간위치', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color.fromARGB(255, 36, 115, 179),
+                          ),
                         ),
-                      ),
-                      ElevatedButton(
-                        onPressed: _isPenaltyButtonEnabled(appointmentDateTime)
-                            ? _handlePenaltySettlement
-                            : _showPenaltyWarning,
-                        child: Text('벌금정산', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                        ElevatedButton(
+                          onPressed: _isPenaltyButtonEnabled(appointmentDateTime)
+                              ? _handlePenaltySettlement
+                              : _showPenaltyWarning,
+                          child: Text('벌금정산', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           }

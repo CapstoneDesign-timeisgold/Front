@@ -7,7 +7,6 @@ import './add_friend.dart';
 import './friend_requests.dart';
 import './config.dart';
 
-
 class FriendListScreen extends StatefulWidget {
   @override
   _FriendListScreenState createState() => _FriendListScreenState();
@@ -32,15 +31,42 @@ class _FriendListScreenState extends State<FriendListScreen> {
 
     final response = await http.get(
       Uri.parse('$baseUrl/friend/list/$username'),
-      //headers: {'username': username},
     );
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      //return data.map((json) => Friend.fromJson(json)).toList();
       return data.map((json) => Friend.fromJson(json)).where((friend) => friend.status == "ACCEPTED").toList();
     } else {
       throw Exception('Failed to load friends');
+    }
+  }
+
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainList()),
+        );
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => AddFriendScreen()),
+        );
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => FriendRequestsScreen()),
+        );
+        break;
     }
   }
 
@@ -48,7 +74,7 @@ class _FriendListScreenState extends State<FriendListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Friend List', style: TextStyle(color: Colors.white)),
+        title: Text('친구 목록', style: TextStyle(color: Colors.white)),
         backgroundColor: Color.fromARGB(255, 36, 115, 179),
       ),
       body: FutureBuilder<List<Friend>>(
@@ -60,15 +86,17 @@ class _FriendListScreenState extends State<FriendListScreen> {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
             final friends = snapshot.data!;
-            return SingleChildScrollView( // Wrap with SingleChildScrollView
+            return SingleChildScrollView(
               child: Column(
                 children: [
                   ListView.builder(
                     shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
                     itemCount: friends.length,
                     itemBuilder: (context, index) {
                       final friend = friends[index];
                       return Card(
+                        color: Colors.white,
                         child: ListTile(
                           title: Text(friend.username2),
                         ),
@@ -81,45 +109,24 @@ class _FriendListScreenState extends State<FriendListScreen> {
           }
         },
       ),
-      bottomNavigationBar: BottomAppBar(
-        shape: CircularNotchedRectangle(),
-        notchMargin: 6.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            IconButton(
-              icon: Icon(Icons.home, color: Colors.blueGrey),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => MainList()), // Replace with your MainList screen
-                );
-              },
-              tooltip: '홈',
-            ),
-            IconButton(
-              icon: Icon(Icons.person_add, color: Colors.blueGrey),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddFriendScreen()),
-                );
-              },
-              tooltip: '친구 추가',
-            ),
-            IconButton(
-              icon: Icon(Icons.mail, color: Colors.blueGrey),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => FriendRequestsScreen()),
-                );
-              },
-              tooltip: '친구 요청 확인',
-            ),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: '홈',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_add),
+            label: '친구 추가',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.mail),
+            label: '친구 요청 확인',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        onTap: _onItemTapped,
       ),
     );
   }
@@ -138,112 +145,3 @@ class Friend {
     );
   }
 }
-
-
-/*class FriendListScreen extends StatefulWidget {
-  @override
-  _FriendListScreenState createState() => _FriendListScreenState();
-}
-
-class _FriendListScreenState extends State<FriendListScreen> {
-  late Future<List<Friend>> _futureFriends;
-
-  @override
-  void initState() {
-    super.initState();
-    _futureFriends = _fetchFriends();
-  }
-
-  Future<List<Friend>> _fetchFriends() async {
-    // 하드코딩된 데이터 사용
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
-    return [
-      Friend(username2: 'friend1'),
-      Friend(username2: 'friend2'),
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Friend List', style: TextStyle(color: Colors.white)),
-        backgroundColor: Color.fromARGB(255, 36, 115, 179),
-      ),
-      body: FutureBuilder<List<Friend>>(
-        future: _futureFriends,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
-            final friends = snapshot.data!;
-            return ListView.builder(
-              itemCount: friends.length,
-              itemBuilder: (context, index) {
-                final friend = friends[index];
-                return Card(
-                  child: ListTile(
-                    title: Text(friend.username2),
-                  ),
-                );
-              },
-            );
-          }
-        },
-      ),
-      bottomNavigationBar: BottomAppBar(
-        shape: CircularNotchedRectangle(),
-        notchMargin: 6.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            IconButton(
-              icon: Icon(Icons.home, color: Colors.blueGrey),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => MainList()), // Replace with your MainList screen
-                );
-              },
-              tooltip: '홈',
-            ),
-            IconButton(
-              icon: Icon(Icons.person_add, color: Colors.blueGrey),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddFriendScreen()),
-                );
-              },
-              tooltip: '친구 추가',
-            ),
-            IconButton(
-              icon: Icon(Icons.mail, color: Colors.blueGrey),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => FriendRequestsScreen()),
-                );
-              },
-              tooltip: '친구 요청 확인',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class Friend {
-  final String username2;
-
-  Friend({required this.username2});
-
-  factory Friend.fromJson(Map<String, dynamic> json) {
-    return Friend(
-      username2: json['username2'],
-    );
-  }
-}*/

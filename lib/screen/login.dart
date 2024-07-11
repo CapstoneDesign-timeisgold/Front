@@ -73,7 +73,7 @@ class _LogInState extends State<LogIn> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Log in', style: TextStyle(color: Colors.white)),
+        title: Text('로그인', style: TextStyle(color: Colors.white)),
         elevation: 0.0,
         backgroundColor: Color.fromARGB(255, 36, 115, 179),
         centerTitle: true,
@@ -111,12 +111,12 @@ class _LogInState extends State<LogIn> {
                         TextField(
                           autofocus: true,
                           controller: controller,
-                          decoration: InputDecoration(labelText: 'Enter your ID'),
+                          decoration: InputDecoration(labelText: 'ID를 입력하세요'),
                           keyboardType: TextInputType.emailAddress,
                         ),
                         TextField(
                           controller: controller2,
-                          decoration: InputDecoration(labelText: 'Enter your Password'),
+                          decoration: InputDecoration(labelText: 'Password를 입력하세요'),
                           keyboardType: TextInputType.text,
                           obscureText: true,
                         ),
@@ -126,7 +126,7 @@ class _LogInState extends State<LogIn> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color.fromARGB(255, 36, 115, 179),
                           ),
-                          child: Text('Log in', style: TextStyle(color: Colors.white)),
+                          child: Text('로그인', style: TextStyle(color: Colors.white)),
                         ),
                         SizedBox(height: 20.0),
                         TextButton(
@@ -136,7 +136,7 @@ class _LogInState extends State<LogIn> {
                               MaterialPageRoute(builder: (context) => SignUp()),
                             );
                           },
-                          child: Text('Sign Up'),
+                          child: Text('회원가입'),
                         ),
                       ],
                     ),

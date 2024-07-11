@@ -65,6 +65,40 @@
             font-weight: bold;
             color: #333;
         }
+        #categoryButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 2;
+        }
+        #categoryList {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            width: 250px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            z-index: 2;
+        }
+        #categoryList ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #categoryList li {
+            padding: 5px;
+            cursor: pointer;
+        }
+        #categoryList li:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -78,11 +112,16 @@
     <div id="recommendation"></div>
 </div>
 
+<button id="categoryButton" onclick="toggleCategoryList()">카테고리</button>
+<div id="categoryList">
+    <ul id="categoryListUl"></ul>
+</div>
+
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=6393c3462ba1dda0bc74f24086bc43a7&libraries=services"></script>
 <script>
     var latitude, longitude, map, circle, fixedMarker, infoWindow;
     var placeMarkers = [];
-    
+
     var mapContainer = document.getElementById('map'),
         mapOptions = {
             center: new kakao.maps.LatLng(37.566535, 126.9779692), // 기본 위치 설정
@@ -146,9 +185,7 @@
 
         circle.setMap(map);
 
-        //searchNearby('FD6'); // 예시로 '음식점' 검색
-        searchNearby(randomCategory.code); // 예시로 '음식점' 검색
-
+        searchNearby(randomCategory.code);
 
         console.log('Setting marker at: ', lat, lng);
     }
@@ -169,10 +206,33 @@
     var randomCategory = categoryGroups[Math.floor(Math.random() * categoryGroups.length)];
     document.getElementById('recommendation').innerText = randomCategory.text;
 
+    // 카테고리 목록 생성
+    var categoryListUl = document.getElementById('categoryListUl');
+    categoryGroups.forEach(function(category) {
+        var li = document.createElement('li');
+        li.textContent = category.text.split("'")[1];  // 카테고리 이름만 추출
+        li.onclick = function() {
+            searchNearby(category.code);
+            toggleCategoryList();
+        };
+        categoryListUl.appendChild(li);
+    });
+
+    function toggleCategoryList() {
+        var categoryList = document.getElementById('categoryList');
+        categoryList.style.display = categoryList.style.display === 'none' ? 'block' : 'none';
+    }
+
     function searchNearby(categoryCode) {
         var radius = 500;
         var placesList = document.getElementById('placesList');
         placesList.innerHTML = '';
+
+        // 기존 마커 제거
+        placeMarkers.forEach(function(marker) {
+            marker.setMap(null);
+        });
+        placeMarkers = [];
 
         var ps = new kakao.maps.services.Places();
         ps.categorySearch(categoryCode, placesSearchCB, {
