@@ -12,6 +12,7 @@ import './config.dart';
 import 'recommend_place.dart';
 import 'realtime_location.dart';
 import 'main_list.dart'; // 추가된 임포트
+import 'appointment_result.dart'; //약속결과
 
 class AppointmentDetailScreen extends StatefulWidget {
   final int promiseId;
@@ -170,6 +171,16 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       ),
     );
   }
+
+  //약속결과화면으로 이동
+  void _navigateToAppointmentResultScreen() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => AppointmentResultScreen(promiseId: widget.promiseId),
+    ),
+  );
+}
 
   bool _isPenaltyButtonEnabled(DateTime appointmentDateTime) {
     DateTime now = DateTime.now();
@@ -349,13 +360,13 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        ElevatedButton(
+                        /*ElevatedButton(
                           onPressed: _navigateToRecommendPlaceScreen,
                           child: Text('주변추천장소', style: TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color.fromARGB(255, 36, 115, 179),
                           ),
-                        ),
+                        ),*/
                         ElevatedButton(
                           onPressed: _navigateToRealTimeLocationScreen,
                           child: Text('실시간위치', style: TextStyle(color: Colors.white)),
@@ -370,6 +381,14 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                           child: Text('벌금정산', style: TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
+                          ),
+                        ),
+                        //약속결과확인 버튼 추가
+                        ElevatedButton(
+                          onPressed: _navigateToAppointmentResultScreen,
+                          child: Text('약속결과확인', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green, // 색상 변경 예정
                           ),
                         ),
                       ],
